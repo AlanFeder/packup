@@ -116,39 +116,6 @@ fun MorningContent(
         modifier = modifier.padding(horizontal = 16.dp, vertical = 16.dp),
         verticalArrangement = Arrangement.spacedBy(16.dp)
     ) {
-        // Header
-        Row(
-            verticalAlignment = Alignment.CenterVertically,
-            horizontalArrangement = Arrangement.spacedBy(12.dp),
-            modifier = Modifier.padding(vertical = 8.dp)
-        ) {
-            Box(
-                modifier = Modifier
-                    .size(48.dp)
-                    .background(extendedColors.warningContainer, CircleShape),
-                contentAlignment = Alignment.Center
-            ) {
-                Icon(
-                    Icons.Outlined.WbTwilight,
-                    contentDescription = null,
-                    modifier = Modifier.size(24.dp),
-                    tint = extendedColors.onWarningContainer
-                )
-            }
-            Column {
-                Text(
-                    "Morning of Travel",
-                    style = MaterialTheme.typography.titleMedium,
-                    color = colorScheme.onSurface
-                )
-                Text(
-                    "$totalCount item${if (totalCount != 1) "s" else ""} for departure day",
-                    style = MaterialTheme.typography.bodySmall,
-                    color = colorScheme.onSurfaceVariant
-                )
-            }
-        }
-
         // Snoozed items grouped by member
         membersWithSnoozed.forEach { (member, items) ->
             SnoozedMemberCard(
@@ -189,11 +156,6 @@ fun MorningContent(
                     style = MaterialTheme.typography.titleSmall,
                     color = colorScheme.onSurface,
                     modifier = Modifier.weight(1f)
-                )
-                Text(
-                    "${morningTodo.size} remaining",
-                    style = MaterialTheme.typography.labelSmall,
-                    color = colorScheme.onSurfaceVariant
                 )
             }
 
@@ -348,15 +310,6 @@ private fun SnoozedMemberCard(
                 style = MaterialTheme.typography.titleSmall,
                 color = colorScheme.onSurface,
                 modifier = Modifier.weight(1f)
-            )
-            Text(
-                "${items.size} item${if (items.size != 1) "s" else ""}",
-                style = MaterialTheme.typography.labelSmall,
-                color = extendedColors.onWarningContainer,
-                modifier = Modifier
-                    .clip(RoundedCornerShape(12.dp))
-                    .background(extendedColors.warningContainer.copy(alpha = 0.5f))
-                    .padding(horizontal = 8.dp, vertical = 4.dp)
             )
         }
 
