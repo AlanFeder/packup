@@ -18,14 +18,17 @@ import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.CheckCircle
+import androidx.compose.material.icons.outlined.Celebration
 import androidx.compose.material.icons.filled.ExpandLess
 import androidx.compose.material.icons.filled.ExpandMore
 import androidx.compose.material.icons.outlined.WbTwilight
+import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.ElevatedCard
 import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
+import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
@@ -77,6 +80,37 @@ fun MorningContent(
     val morningTodo = morningItems.filter { it.status == MorningItemStatus.TODO }
     val morningDone = morningItems.filter { it.status == MorningItemStatus.DONE }
     val totalCount = snoozedItems.size + morningItems.size
+    var showCelebration by remember { mutableStateOf(false) }
+    var hadTodoItems by remember { mutableStateOf(morningTodo.isNotEmpty()) }
+
+    LaunchedEffect(morningTodo.isEmpty(), morningDone.isNotEmpty()) {
+        if (morningTodo.isEmpty() && morningDone.isNotEmpty() && hadTodoItems) {
+            delay(400)
+            showCelebration = true
+        }
+        hadTodoItems = morningTodo.isNotEmpty()
+    }
+
+    if (showCelebration) {
+        AlertDialog(
+            onDismissRequest = { showCelebration = false },
+            icon = {
+                Icon(
+                    Icons.Outlined.Celebration,
+                    contentDescription = null,
+                    modifier = Modifier.size(48.dp),
+                    tint = MaterialTheme.colorScheme.primary
+                )
+            },
+            title = { Text("Ready to go!") },
+            text = { Text("All tasks are done. Have a great trip!") },
+            confirmButton = {
+                TextButton(onClick = { showCelebration = false }) {
+                    Text("Let's go!")
+                }
+            }
+        )
+    }
 
     Column(
         modifier = modifier.padding(horizontal = 16.dp, vertical = 16.dp),
