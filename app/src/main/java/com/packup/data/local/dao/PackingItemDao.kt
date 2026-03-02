@@ -43,6 +43,9 @@ interface PackingItemDao {
     @Query("DELETE FROM packing_items WHERE memberId = :memberId")
     suspend fun deleteByMember(memberId: String)
 
+    @Query("UPDATE packing_items SET status = 'TODO', updatedAt = :now")
+    suspend fun resetAllStatuses(now: Long = System.currentTimeMillis())
+
     @Query("DELETE FROM packing_items")
     suspend fun deleteAll()
 }

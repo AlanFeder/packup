@@ -31,6 +31,9 @@ interface MorningItemDao {
     @Query("DELETE FROM morning_items WHERE id = :itemId")
     suspend fun delete(itemId: String)
 
+    @Query("UPDATE morning_items SET status = 'TODO', updatedAt = :now")
+    suspend fun resetAllStatuses(now: Long = System.currentTimeMillis())
+
     @Query("DELETE FROM morning_items")
     suspend fun deleteAll()
 }

@@ -68,6 +68,8 @@ fun CategoryGroup(
         modifier = modifier.fillMaxWidth(),
         shape = RoundedCornerShape(16.dp),
     ) {
+        var markAllTriggered by remember { mutableStateOf(false) }
+
         // Header
         Row(
             modifier = Modifier
@@ -101,7 +103,7 @@ fun CategoryGroup(
             )
             if (todoItems.isNotEmpty()) {
                 TextButton(
-                    onClick = { onMarkAllDone(category) },
+                    onClick = { markAllTriggered = true },
                 ) {
                     Icon(
                         Icons.Outlined.DoneAll,
@@ -109,7 +111,7 @@ fun CategoryGroup(
                         modifier = Modifier.size(14.dp)
                     )
                     Text(
-                        " All done",
+                        " Mark All",
                         style = MaterialTheme.typography.labelSmall
                     )
                 }
@@ -120,17 +122,30 @@ fun CategoryGroup(
 
         // Items
         var exitingItems by remember { mutableStateOf(setOf<String>()) }
+        var snoozingItems by remember { mutableStateOf(setOf<String>()) }
+
+        if (markAllTriggered) {
+            LaunchedEffect(Unit) {
+                todoItems.forEachIndexed { index, item ->
+                    delay(120L * index)
+                    exitingItems = exitingItems + item.id
+                }
+                markAllTriggered = false
+            }
+        }
 
         Column(modifier = Modifier.padding(horizontal = 4.dp, vertical = 4.dp)) {
             todoItems.forEach { item ->
                 key(item.id) {
                     val isExiting = item.id in exitingItems
+                    val isSnoozing = item.id in snoozingItems
+                    val isAnimating = isExiting || isSnoozing
                     val offsetX = remember { Animatable(0f) }
                     val itemAlpha = remember { Animatable(1f) }
                     val itemScale = remember { Animatable(1f) }
 
                     AnimatedVisibility(
-                        visible = !isExiting || offsetX.isRunning || itemAlpha.value > 0f,
+                        visible = !isAnimating || offsetX.isRunning || itemAlpha.value > 0f,
                         exit = shrinkVertically(tween(250))
                     ) {
                         Box(
@@ -144,7 +159,9 @@ fun CategoryGroup(
                                 onToggleDone = {
                                     exitingItems = exitingItems + item.id
                                 },
-                                onSnooze = { onSnooze(item.id) },
+                                onSnooze = {
+                                    snoozingItems = snoozingItems + item.id
+                                },
                                 onEdit = { newName -> onEdit(item.id, newName) },
                                 onDelete = { onDelete(item.id) },
                                 isExiting = isExiting
@@ -154,15 +171,25 @@ fun CategoryGroup(
 
                     if (isExiting) {
                         LaunchedEffect(item.id) {
-                            // Phase 1: brief pause to let the checkbox fill
                             delay(200)
-                            // Phase 2: slide right, shrink, and fade
                             launch { offsetX.animateTo(400f, tween(350)) }
                             launch { itemScale.animateTo(0.92f, tween(350)) }
                             itemAlpha.animateTo(0f, tween(300))
                             delay(50)
                             onToggleDone(item)
                             exitingItems = exitingItems - item.id
+                        }
+                    }
+
+                    if (isSnoozing) {
+                        LaunchedEffect(item.id) {
+                            delay(150)
+                            launch { offsetX.animateTo(-400f, tween(350)) }
+                            launch { itemScale.animateTo(0.92f, tween(350)) }
+                            itemAlpha.animateTo(0f, tween(300))
+                            delay(50)
+                            onSnooze(item.id)
+                            snoozingItems = snoozingItems - item.id
                         }
                     }
                 }

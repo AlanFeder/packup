@@ -1,6 +1,8 @@
 package com.packup.ui.components
 
 import android.content.Context
+import android.graphics.Bitmap
+import android.graphics.BitmapFactory
 import android.net.Uri
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.PickVisualMediaRequest
@@ -8,17 +10,24 @@ import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.animation.expandVertically
 import androidx.compose.animation.shrinkVertically
+import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
+import androidx.compose.foundation.gestures.detectTransformGestures
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.ExperimentalLayoutApi
 import androidx.compose.foundation.layout.FlowRow
 import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.aspectRatio
+import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.heightIn
+import androidx.compose.foundation.layout.imePadding
 import androidx.compose.foundation.layout.offset
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
@@ -45,20 +54,32 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.ModalBottomSheet
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Text
+import androidx.compose.material3.TextButton
 import androidx.compose.material3.rememberModalBottomSheetState
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableFloatStateOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.geometry.Offset
+import androidx.compose.ui.geometry.Size
+import androidx.compose.ui.graphics.BlendMode
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.SolidColor
+import androidx.compose.ui.graphics.graphicsLayer
+import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.layout.ContentScale
+import androidx.compose.ui.layout.onSizeChanged
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.input.ImeAction
+import androidx.compose.ui.unit.IntSize
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.window.Dialog
+import androidx.compose.ui.window.DialogProperties
 import coil3.compose.AsyncImage
 import com.packup.data.local.entity.FamilyMemberEntity
 import java.io.File
@@ -93,17 +114,163 @@ fun MemberManagerSheet(
     }
 }
 
-private fun copyImageToInternalStorage(context: Context, uri: Uri): String? {
+private fun saveCroppedBitmap(
+    context: Context,
+    sourceUri: Uri,
+    scale: Float,
+    offsetX: Float,
+    offsetY: Float,
+    viewSize: IntSize
+): String? {
     return try {
+        val inputStream = context.contentResolver.openInputStream(sourceUri) ?: return null
+        val original = BitmapFactory.decodeStream(inputStream)
+        inputStream.close()
+
+        val cropSize = 512
+        val circleRadius = viewSize.width.coerceAtMost(viewSize.height) * 0.4f
+        val circleDiameterPx = circleRadius * 2f
+        val centerX = viewSize.width / 2f
+        val centerY = viewSize.height / 2f
+
+        val imgAspect = original.width.toFloat() / original.height.toFloat()
+        val fitWidth: Float
+        val fitHeight: Float
+        if (imgAspect > 1f) {
+            fitHeight = viewSize.height.toFloat()
+            fitWidth = fitHeight * imgAspect
+        } else {
+            fitWidth = viewSize.width.toFloat()
+            fitHeight = fitWidth / imgAspect
+        }
+
+        val scaledWidth = fitWidth * scale
+        val scaledHeight = fitHeight * scale
+        val imgLeft = centerX - scaledWidth / 2f + offsetX
+        val imgTop = centerY - scaledHeight / 2f + offsetY
+
+        val cropLeft = centerX - circleRadius
+        val cropTop = centerY - circleRadius
+
+        val srcLeft = ((cropLeft - imgLeft) / scaledWidth * original.width).toInt().coerceIn(0, original.width - 1)
+        val srcTop = ((cropTop - imgTop) / scaledHeight * original.height).toInt().coerceIn(0, original.height - 1)
+        val srcRight = (((cropLeft + circleDiameterPx) - imgLeft) / scaledWidth * original.width).toInt().coerceIn(srcLeft + 1, original.width)
+        val srcBottom = (((cropTop + circleDiameterPx) - imgTop) / scaledHeight * original.height).toInt().coerceIn(srcTop + 1, original.height)
+
+        val cropped = Bitmap.createBitmap(original, srcLeft, srcTop, srcRight - srcLeft, srcBottom - srcTop)
+        val scaled = Bitmap.createScaledBitmap(cropped, cropSize, cropSize, true)
+
         val dir = File(context.filesDir, "member_photos")
         if (!dir.exists()) dir.mkdirs()
         val file = File(dir, "${UUID.randomUUID()}.jpg")
-        context.contentResolver.openInputStream(uri)?.use { input ->
-            file.outputStream().use { output -> input.copyTo(output) }
+        file.outputStream().use { out ->
+            scaled.compress(Bitmap.CompressFormat.JPEG, 90, out)
         }
+
+        original.recycle()
+        cropped.recycle()
+        scaled.recycle()
+
         file.absolutePath
     } catch (_: Exception) {
         null
+    }
+}
+
+@Composable
+private fun PhotoCropDialog(
+    imageUri: Uri,
+    onConfirm: (scale: Float, offsetX: Float, offsetY: Float, viewSize: IntSize) -> Unit,
+    onCancel: () -> Unit
+) {
+    val colorScheme = MaterialTheme.colorScheme
+
+    var scale by remember { mutableFloatStateOf(1f) }
+    var offsetX by remember { mutableFloatStateOf(0f) }
+    var offsetY by remember { mutableFloatStateOf(0f) }
+    var viewSize by remember { mutableStateOf(IntSize.Zero) }
+
+    Dialog(
+        onDismissRequest = onCancel,
+        properties = DialogProperties(usePlatformDefaultWidth = false)
+    ) {
+        Column(
+            modifier = Modifier
+                .fillMaxSize()
+                .background(Color.Black)
+        ) {
+            Row(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(horizontal = 8.dp, vertical = 4.dp),
+                horizontalArrangement = Arrangement.SpaceBetween,
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                TextButton(onClick = onCancel) {
+                    Text("Cancel", color = Color.White)
+                }
+                Text(
+                    "Move and Scale",
+                    style = MaterialTheme.typography.titleMedium,
+                    color = Color.White
+                )
+                TextButton(onClick = { onConfirm(scale, offsetX, offsetY, viewSize) }) {
+                    Text("Done", color = colorScheme.primary)
+                }
+            }
+
+            Box(
+                modifier = Modifier
+                    .weight(1f)
+                    .fillMaxWidth()
+                    .onSizeChanged { viewSize = it }
+                    .pointerInput(Unit) {
+                        detectTransformGestures { _, pan, zoom, _ ->
+                            scale = (scale * zoom).coerceIn(0.5f, 5f)
+                            offsetX += pan.x
+                            offsetY += pan.y
+                        }
+                    },
+                contentAlignment = Alignment.Center
+            ) {
+                AsyncImage(
+                    model = imageUri,
+                    contentDescription = "Crop preview",
+                    modifier = Modifier
+                        .fillMaxSize()
+                        .graphicsLayer {
+                            scaleX = scale
+                            scaleY = scale
+                            translationX = offsetX
+                            translationY = offsetY
+                        },
+                    contentScale = ContentScale.Fit
+                )
+
+                Canvas(
+                    modifier = Modifier
+                        .fillMaxSize()
+                        .graphicsLayer(compositingStrategy = androidx.compose.ui.graphics.CompositingStrategy.Offscreen)
+                ) {
+                    val circleRadius = size.width.coerceAtMost(size.height) * 0.4f
+                    val center = Offset(size.width / 2f, size.height / 2f)
+
+                    drawRect(Color.Black.copy(alpha = 0.6f))
+                    drawCircle(
+                        color = Color.Transparent,
+                        radius = circleRadius,
+                        center = center,
+                        blendMode = BlendMode.Clear
+                    )
+                    drawCircle(
+                        color = Color.White.copy(alpha = 0.5f),
+                        radius = circleRadius,
+                        center = center,
+                        style = androidx.compose.ui.graphics.drawscope.Stroke(width = 2.dp.toPx())
+                    )
+                }
+            }
+        }
     }
 }
 
@@ -127,20 +294,39 @@ private fun MemberManagerContent(
     var pickingIconFor by remember { mutableStateOf<String?>(null) }
     var confirmDelete by remember { mutableStateOf<String?>(null) }
     var pickingPhotoForMemberId by remember { mutableStateOf<String?>(null) }
+    var pendingCropUri by remember { mutableStateOf<Uri?>(null) }
 
     val photoPickerLauncher = rememberLauncherForActivityResult(
         contract = ActivityResultContracts.PickVisualMedia()
     ) { uri ->
         if (uri != null && pickingPhotoForMemberId != null) {
-            val internalPath = copyImageToInternalStorage(context, uri)
-            if (internalPath != null) {
-                onSetMemberPhoto(pickingPhotoForMemberId!!, internalPath)
-            }
+            pendingCropUri = uri
+        } else {
+            pickingPhotoForMemberId = null
         }
-        pickingPhotoForMemberId = null
     }
 
-    Column(modifier = Modifier.padding(bottom = 32.dp)) {
+    if (pendingCropUri != null && pickingPhotoForMemberId != null) {
+        PhotoCropDialog(
+            imageUri = pendingCropUri!!,
+            onConfirm = { cropScale, cropOffsetX, cropOffsetY, cropViewSize ->
+                val path = saveCroppedBitmap(
+                    context, pendingCropUri!!, cropScale, cropOffsetX, cropOffsetY, cropViewSize
+                )
+                if (path != null) {
+                    onSetMemberPhoto(pickingPhotoForMemberId!!, path)
+                }
+                pendingCropUri = null
+                pickingPhotoForMemberId = null
+            },
+            onCancel = {
+                pendingCropUri = null
+                pickingPhotoForMemberId = null
+            }
+        )
+    }
+
+    Column(modifier = Modifier.imePadding().padding(bottom = 32.dp)) {
         Row(
             modifier = Modifier
                 .fillMaxWidth()

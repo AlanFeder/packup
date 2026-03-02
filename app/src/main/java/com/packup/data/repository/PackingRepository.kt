@@ -172,14 +172,7 @@ class PackingRepository @Inject constructor(
     }
 
     suspend fun resetAll() {
-        packingItemDao.deleteAll()
-        morningItemDao.deleteAll()
-        categoryDao.deleteAll()
-        familyMemberDao.deleteAll()
-
-        categoryDao.insertAll(SeedData.categories)
-        familyMemberDao.insertAll(SeedData.familyMembers)
-        packingItemDao.insertAll(SeedData.packingItems)
-        morningItemDao.insertAll(SeedData.morningItems)
+        packingItemDao.resetAllStatuses()
+        morningItemDao.resetAllStatuses()
     }
 }

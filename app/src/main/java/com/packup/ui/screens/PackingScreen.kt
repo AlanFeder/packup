@@ -8,6 +8,7 @@ import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.imePadding
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.rememberScrollState
@@ -83,8 +84,8 @@ fun PackingScreen(
     if (showResetDialog) {
         AlertDialog(
             onDismissRequest = { showResetDialog = false },
-            title = { Text("Reset everything?") },
-            text = { Text("This will restore all lists to their original state. All progress will be lost.") },
+            title = { Text("Reset all items?") },
+            text = { Text("This will uncheck all packed items and return snoozed items to their original lists. Your members, categories, and items won't be changed.") },
             confirmButton = {
                 TextButton(
                     onClick = {
@@ -131,7 +132,7 @@ fun PackingScreen(
         drawerContent = {
             ModalDrawerSheet {
                 Text(
-                    "PackUp",
+                    "Pack Pal",
                     style = MaterialTheme.typography.titleLarge,
                     modifier = Modifier.padding(horizontal = 24.dp, vertical = 24.dp)
                 )
@@ -180,7 +181,7 @@ fun PackingScreen(
                     TopAppBar(
                         title = {
                             Text(
-                                "PackUp",
+                                "Pack Pal",
                                 style = MaterialTheme.typography.titleLarge
                             )
                         },
@@ -209,9 +210,10 @@ fun PackingScreen(
             if (isMorningView) {
                 Column(
                     modifier = Modifier
-                        .fillMaxSize()
-                        .padding(padding)
-                        .verticalScroll(rememberScrollState())
+                    .fillMaxSize()
+                    .padding(padding)
+                    .imePadding()
+                    .verticalScroll(rememberScrollState())
                 ) {
                     MorningContent(
                         membersWithItems = membersWithItems,
@@ -246,6 +248,7 @@ fun PackingScreen(
                         modifier = Modifier
                             .fillMaxSize()
                             .padding(padding)
+                            .imePadding()
                             .verticalScroll(rememberScrollState())
                             .padding(horizontal = 16.dp)
                     ) {
