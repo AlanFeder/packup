@@ -36,9 +36,11 @@ import androidx.compose.material3.rememberSwipeToDismissBoxState
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableFloatStateOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
+import androidx.compose.runtime.snapshotFlow
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.alpha
@@ -169,14 +171,21 @@ private fun SwipeableItem(
     modifier: Modifier = Modifier
 ) {
     val extendedColors = LocalExtendedColors.current
+    var swipeDistance by remember { mutableFloatStateOf(0f) }
     val dismissState = rememberSwipeToDismissBoxState(
+        positionalThreshold = { it * 0.5f },
         confirmValueChange = { value ->
-            if (value == SwipeToDismissBoxValue.EndToStart) {
+            if (value == SwipeToDismissBoxValue.EndToStart && swipeDistance > 200f) {
                 onSnooze()
                 true
             } else false
         }
     )
+
+    LaunchedEffect(dismissState.currentValue, dismissState.targetValue) {
+        snapshotFlow { dismissState.requireOffset() }
+            .collect { offset -> swipeDistance = kotlin.math.abs(offset) }
+    }
 
     SwipeToDismissBox(
         state = dismissState,
