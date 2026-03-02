@@ -7,6 +7,8 @@ import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
+import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.offset
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
@@ -17,11 +19,15 @@ import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Check
+import androidx.compose.material.icons.outlined.RestartAlt
+import androidx.compose.material.icons.outlined.Settings
 import androidx.compose.material.icons.outlined.WbTwilight
 import androidx.compose.material3.Badge
 import androidx.compose.material3.Icon
+import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
+import androidx.compose.material3.VerticalDivider
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -43,8 +49,11 @@ fun MemberSelector(
     activeMemberId: String,
     totalMorningCount: Int,
     onSelect: (String) -> Unit,
+    onReset: (() -> Unit)? = null,
+    onSettings: (() -> Unit)? = null,
     modifier: Modifier = Modifier
 ) {
+    val colorScheme = MaterialTheme.colorScheme
     val isMorning = activeMemberId == "morning"
 
     val active = members.filter { !it.allDone }
@@ -53,7 +62,8 @@ fun MemberSelector(
     LazyRow(
         modifier = modifier,
         contentPadding = PaddingValues(horizontal = 16.dp),
-        horizontalArrangement = Arrangement.spacedBy(4.dp)
+        horizontalArrangement = Arrangement.spacedBy(4.dp),
+        verticalAlignment = Alignment.CenterVertically
     ) {
         items(active, key = { it.member.id }) { mwi ->
             MemberTab(
@@ -81,6 +91,39 @@ fun MemberSelector(
                 remaining = 0,
                 onClick = { onSelect(mwi.member.id) }
             )
+        }
+
+        if (onReset != null || onSettings != null) {
+            item(key = "actions") {
+                Row(verticalAlignment = Alignment.CenterVertically) {
+                    VerticalDivider(
+                        modifier = Modifier
+                            .height(40.dp)
+                            .padding(horizontal = 4.dp, vertical = 4.dp),
+                        color = colorScheme.outlineVariant.copy(alpha = 0.5f)
+                    )
+                    if (onReset != null) {
+                        IconButton(onClick = onReset) {
+                            Icon(
+                                Icons.Outlined.RestartAlt,
+                                contentDescription = "Reset all",
+                                modifier = Modifier.size(22.dp),
+                                tint = colorScheme.onSurfaceVariant
+                            )
+                        }
+                    }
+                    if (onSettings != null) {
+                        IconButton(onClick = onSettings) {
+                            Icon(
+                                Icons.Outlined.Settings,
+                                contentDescription = "Settings",
+                                modifier = Modifier.size(22.dp),
+                                tint = colorScheme.onSurfaceVariant
+                            )
+                        }
+                    }
+                }
+            }
         }
     }
 }

@@ -276,7 +276,7 @@ private fun PhotoCropDialog(
 
 @OptIn(ExperimentalLayoutApi::class)
 @Composable
-private fun MemberManagerContent(
+internal fun MemberManagerContent(
     members: List<FamilyMemberEntity>,
     onAddMember: (String, String) -> Unit,
     onRenameMember: (String, String) -> Unit,

@@ -120,7 +120,7 @@ fun CategoryManagerButton(
 }
 
 @Composable
-private fun CategoryManagerContent(
+internal fun CategoryManagerContent(
     categories: List<CategoryEntity>,
     onAddCategory: (String, String) -> Unit,
     onRenameCategory: (String, String) -> Unit,
