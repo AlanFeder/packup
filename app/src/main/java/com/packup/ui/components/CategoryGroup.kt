@@ -68,7 +68,7 @@ fun CategoryGroup(
         modifier = modifier.fillMaxWidth(),
         shape = RoundedCornerShape(16.dp),
     ) {
-        var markAllTriggered by remember { mutableStateOf(false) }
+        var markAllExiting by remember { mutableStateOf(false) }
 
         // Header
         Row(
@@ -103,7 +103,7 @@ fun CategoryGroup(
             )
             if (todoItems.isNotEmpty()) {
                 TextButton(
-                    onClick = { markAllTriggered = true },
+                    onClick = { markAllExiting = true },
                 ) {
                     Icon(
                         Icons.Outlined.DoneAll,
@@ -120,20 +120,22 @@ fun CategoryGroup(
 
         HorizontalDivider(color = colorScheme.outlineVariant.copy(alpha = 0.4f))
 
-        // Items
-        var exitingItems by remember { mutableStateOf(setOf<String>()) }
-        var snoozingItems by remember { mutableStateOf(setOf<String>()) }
-
-        if (markAllTriggered) {
+        // Mark All: one collapse animation, then bulk API
+        if (markAllExiting) {
             LaunchedEffect(Unit) {
-                todoItems.forEachIndexed { index, item ->
-                    delay(120L * index)
-                    exitingItems = exitingItems + item.id
-                }
-                markAllTriggered = false
+                delay(250)
+                onMarkAllDone(category)
+                markAllExiting = false
             }
         }
 
+        // Items (single collapse when Mark All, per-item animation for toggle/snooze)
+        var exitingItems by remember { mutableStateOf(setOf<String>()) }
+        var snoozingItems by remember { mutableStateOf(setOf<String>()) }
+        AnimatedVisibility(
+            visible = !markAllExiting,
+            exit = shrinkVertically(tween(250))
+        ) {
         Column(modifier = Modifier.padding(horizontal = 4.dp, vertical = 4.dp)) {
             todoItems.forEach { item ->
                 key(item.id) {
@@ -194,6 +196,7 @@ fun CategoryGroup(
                     }
                 }
             }
+        }
         }
     }
 }

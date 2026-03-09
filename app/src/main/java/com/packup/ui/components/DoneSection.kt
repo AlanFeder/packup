@@ -49,7 +49,7 @@ fun DoneSection(
 
     val extendedColors = LocalExtendedColors.current
     val colorScheme = MaterialTheme.colorScheme
-    var isExpanded by remember { mutableStateOf(false) }
+    var isExpanded by remember { mutableStateOf(true) }
 
     Column(modifier = modifier.padding(top = 16.dp)) {
         Row(

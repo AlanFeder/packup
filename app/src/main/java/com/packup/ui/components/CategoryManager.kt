@@ -10,6 +10,7 @@ import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.imePadding
@@ -126,7 +127,9 @@ internal fun CategoryManagerContent(
     onRenameCategory: (String, String) -> Unit,
     onDeleteCategory: (String) -> Unit,
     onSetCategoryIcon: (String, String) -> Unit,
-    onDismiss: () -> Unit
+    onDismiss: () -> Unit,
+    showHeader: Boolean = true,
+    expandList: Boolean = false,
 ) {
     val colorScheme = MaterialTheme.colorScheme
     var newCatName by remember { mutableStateOf("") }
@@ -136,34 +139,41 @@ internal fun CategoryManagerContent(
     var pickingIconFor by remember { mutableStateOf<String?>(null) }
     var confirmDelete by remember { mutableStateOf<String?>(null) }
 
-    Column(modifier = Modifier.imePadding().padding(bottom = 32.dp)) {
-        Row(
-            modifier = Modifier
-                .fillMaxWidth()
-                .padding(horizontal = 24.dp, vertical = 8.dp),
-            verticalAlignment = Alignment.CenterVertically
-        ) {
-            Icon(
-                Icons.AutoMirrored.Outlined.Label,
-                contentDescription = null,
-                tint = colorScheme.primary,
-                modifier = Modifier.size(20.dp)
-            )
-            Text(
-                "Categories",
-                style = MaterialTheme.typography.titleMedium,
-                modifier = Modifier.weight(1f).padding(start = 12.dp)
-            )
-            IconButton(onClick = onDismiss) {
-                Icon(Icons.Outlined.Close, "Close")
+    Column(
+        modifier = Modifier
+            .then(if (expandList) Modifier.fillMaxSize() else Modifier)
+            .imePadding()
+            .padding(bottom = 32.dp)
+    ) {
+        if (showHeader) {
+            Row(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(horizontal = 24.dp, vertical = 8.dp),
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                Icon(
+                    Icons.AutoMirrored.Outlined.Label,
+                    contentDescription = null,
+                    tint = colorScheme.primary,
+                    modifier = Modifier.size(20.dp)
+                )
+                Text(
+                    "Categories",
+                    style = MaterialTheme.typography.titleMedium,
+                    modifier = Modifier.weight(1f).padding(start = 12.dp)
+                )
+                IconButton(onClick = onDismiss) {
+                    Icon(Icons.Outlined.Close, "Close")
+                }
             }
-        }
 
-        HorizontalDivider()
+            HorizontalDivider()
+        }
 
         Column(
             modifier = Modifier
-                .heightIn(max = 320.dp)
+                .heightIn(max = if (expandList) 4000.dp else 320.dp)
                 .verticalScroll(rememberScrollState())
                 .padding(horizontal = 16.dp, vertical = 8.dp)
         ) {

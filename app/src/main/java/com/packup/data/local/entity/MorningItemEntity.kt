@@ -15,5 +15,6 @@ data class MorningItemEntity(
     val status: MorningItemStatus = MorningItemStatus.TODO,
     val sortOrder: Int = 0,
     val createdAt: Long = System.currentTimeMillis(),
-    val updatedAt: Long = System.currentTimeMillis()
+    val updatedAt: Long = System.currentTimeMillis(),
+    val updatedByDeviceId: String = ""
 )

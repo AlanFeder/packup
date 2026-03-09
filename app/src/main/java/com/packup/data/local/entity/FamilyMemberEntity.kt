@@ -12,5 +12,6 @@ data class FamilyMemberEntity(
     val photoUri: String = "",
     val sortOrder: Int,
     val createdAt: Long = System.currentTimeMillis(),
-    val updatedAt: Long = System.currentTimeMillis()
+    val updatedAt: Long = System.currentTimeMillis(),
+    val updatedByDeviceId: String = ""
 )

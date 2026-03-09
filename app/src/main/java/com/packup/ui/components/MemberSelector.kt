@@ -41,7 +41,6 @@ import coil3.compose.AsyncImage
 import com.packup.data.local.entity.FamilyMemberEntity
 import com.packup.ui.theme.LocalExtendedColors
 import com.packup.viewmodel.MemberWithItems
-import java.io.File
 
 @Composable
 fun MemberSelector(
@@ -157,7 +156,7 @@ private fun MemberTab(
         Box(contentAlignment = Alignment.Center) {
             if (hasPhoto) {
                 AsyncImage(
-                    model = File(member.photoUri),
+                    model = member.photoUri,
                     contentDescription = member.name,
                     modifier = Modifier
                         .size(48.dp)

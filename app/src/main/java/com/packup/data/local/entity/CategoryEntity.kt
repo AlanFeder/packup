@@ -10,5 +10,6 @@ data class CategoryEntity(
     val iconKey: String = "package",
     val sortOrder: Int = 0,
     val createdAt: Long = System.currentTimeMillis(),
-    val updatedAt: Long = System.currentTimeMillis()
+    val updatedAt: Long = System.currentTimeMillis(),
+    val updatedByDeviceId: String = ""
 )

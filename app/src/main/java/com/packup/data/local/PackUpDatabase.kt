@@ -18,7 +18,7 @@ import com.packup.data.local.entity.PackingItemEntity
         MorningItemEntity::class,
         CategoryEntity::class,
     ],
-    version = 1,
+    version = 2,
     exportSchema = false
 )
 abstract class PackUpDatabase : RoomDatabase() {

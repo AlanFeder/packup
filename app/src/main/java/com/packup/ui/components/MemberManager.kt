@@ -283,7 +283,8 @@ internal fun MemberManagerContent(
     onDeleteMember: (String) -> Unit,
     onSetMemberIcon: (String, String) -> Unit,
     onSetMemberPhoto: (String, String) -> Unit,
-    onDismiss: () -> Unit
+    onDismiss: () -> Unit,
+    showHeader: Boolean = true,
 ) {
     val colorScheme = MaterialTheme.colorScheme
     val context = LocalContext.current
@@ -327,29 +328,31 @@ internal fun MemberManagerContent(
     }
 
     Column(modifier = Modifier.imePadding().padding(bottom = 32.dp)) {
-        Row(
-            modifier = Modifier
-                .fillMaxWidth()
-                .padding(horizontal = 24.dp, vertical = 8.dp),
-            verticalAlignment = Alignment.CenterVertically
-        ) {
-            Icon(
-                Icons.Outlined.People,
-                contentDescription = null,
-                tint = colorScheme.primary,
-                modifier = Modifier.size(20.dp)
-            )
-            Text(
-                "Family Members",
-                style = MaterialTheme.typography.titleMedium,
-                modifier = Modifier.weight(1f).padding(start = 12.dp)
-            )
-            IconButton(onClick = onDismiss) {
-                Icon(Icons.Outlined.Close, "Close")
+        if (showHeader) {
+            Row(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(horizontal = 24.dp, vertical = 8.dp),
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                Icon(
+                    Icons.Outlined.People,
+                    contentDescription = null,
+                    tint = colorScheme.primary,
+                    modifier = Modifier.size(20.dp)
+                )
+                Text(
+                    "Family Members",
+                    style = MaterialTheme.typography.titleMedium,
+                    modifier = Modifier.weight(1f).padding(start = 12.dp)
+                )
+                IconButton(onClick = onDismiss) {
+                    Icon(Icons.Outlined.Close, "Close")
+                }
             }
-        }
 
-        HorizontalDivider()
+            HorizontalDivider()
+        }
 
         Column(
             modifier = Modifier
@@ -568,7 +571,7 @@ fun MemberAvatarCircle(
     Box(modifier = modifier, contentAlignment = Alignment.Center) {
         if (member.photoUri.isNotEmpty()) {
             AsyncImage(
-                model = File(member.photoUri),
+                model = member.photoUri,
                 contentDescription = member.name,
                 modifier = Modifier
                     .size(size.dp)

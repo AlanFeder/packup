@@ -2,6 +2,7 @@ package com.packup.viewmodel
 
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import com.packup.data.local.DevicePreferences
 import com.packup.data.local.entity.CategoryEntity
 import com.packup.data.local.entity.FamilyMemberEntity
 import com.packup.data.local.entity.ItemStatus
@@ -16,6 +17,8 @@ import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.stateIn
+import kotlinx.coroutines.flow.launchIn
+import kotlinx.coroutines.flow.onEach
 import kotlinx.coroutines.launch
 import javax.inject.Inject
 
@@ -33,10 +36,14 @@ data class MemberWithItems(
 
 @HiltViewModel
 class PackingViewModel @Inject constructor(
-    private val repository: PackingRepository
+    private val repository: PackingRepository,
+    private val devicePreferences: DevicePreferences,
 ) : ViewModel() {
 
     private val _activeMemberId = MutableStateFlow("mom")
+
+    val familyId: StateFlow<String?> = devicePreferences.familyIdFlow
+        .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), null)
     val activeMemberId: StateFlow<String> = _activeMemberId.asStateFlow()
 
     val isMorningView: StateFlow<Boolean> = combine(_activeMemberId) { ids ->
@@ -69,6 +76,28 @@ class PackingViewModel @Inject constructor(
         members.find { it.member.id == id }
     }.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), null)
 
+    init {
+        // On load: select the first list in the carousel (first non-done member, or morning).
+        // So if someone completed their list and moved to the end, we don't open on them.
+        var hasSetInitialSelection = false
+        membersWithItems
+            .onEach { members ->
+                if (members.isEmpty()) return@onEach
+                val firstInCarousel = members
+                    .filter { !it.allDone }
+                    .firstOrNull()?.member?.id ?: "morning"
+                val currentId = _activeMemberId.value
+                val currentValid = currentId == "morning" || members.any { it.member.id == currentId }
+                if (!hasSetInitialSelection) {
+                    _activeMemberId.value = firstInCarousel
+                    hasSetInitialSelection = true
+                } else if (!currentValid) {
+                    _activeMemberId.value = firstInCarousel
+                }
+            }
+            .launchIn(viewModelScope)
+    }
+
     // Total morning items count (snoozed packing items + dedicated morning items)
     val totalMorningCount: StateFlow<Int> = combine(
         snoozedItems,
@@ -77,11 +106,7 @@ class PackingViewModel @Inject constructor(
         snoozed.size + morning.size
     }.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), 0)
 
-    init {
-        viewModelScope.launch {
-            repository.seedIfEmpty()
-        }
-    }
+    // Seeding is handled by StartupViewModel before this screen is shown
 
     fun selectMember(id: String) {
         _activeMemberId.value = id

@@ -33,7 +33,6 @@ import androidx.compose.ui.unit.dp
 import coil3.compose.AsyncImage
 import com.packup.ui.theme.LocalExtendedColors
 import com.packup.viewmodel.MemberWithItems
-import java.io.File
 
 @Composable
 fun ProgressHeader(
@@ -101,7 +100,7 @@ fun ProgressHeader(
 
             if (member.photoUri.isNotEmpty()) {
                 AsyncImage(
-                    model = File(member.photoUri),
+                    model = member.photoUri,
                     contentDescription = member.name,
                     modifier = Modifier.size(50.dp).clip(CircleShape),
                     contentScale = ContentScale.Crop
