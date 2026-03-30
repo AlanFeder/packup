@@ -12,3 +12,4 @@ local.properties
 /test_screenshots
 /screenshot.png
 vercel_prototype/public/avatars/
+app/google-services.json
