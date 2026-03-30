@@ -188,7 +188,9 @@ class PackingViewModel @Inject constructor(
 
     fun deleteMember(id: String) {
         if (_activeMemberId.value == id) {
-            _activeMemberId.value = "mom"
+            val fallback = membersWithItems.value
+                .firstOrNull { it.member.id != id }?.member?.id ?: "morning"
+            _activeMemberId.value = fallback
         }
         viewModelScope.launch { repository.deleteMember(id) }
     }
@@ -216,7 +218,6 @@ class PackingViewModel @Inject constructor(
     fun resetAll() {
         viewModelScope.launch {
             repository.resetAll()
-            _activeMemberId.value = "mom"
         }
     }
 }

@@ -55,6 +55,7 @@ import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
@@ -65,6 +66,7 @@ import com.packup.ui.components.CategoryManagerContent
 import com.packup.ui.components.DoneSection
 import com.packup.ui.components.MemberManagerContent
 import com.packup.ui.components.MemberSelector
+import com.packup.BuildConfig
 import com.packup.ui.theme.LocalExtendedColors
 import com.packup.viewmodel.PackingViewModel
 
@@ -358,6 +360,16 @@ private fun SettingsScreen(
                             Icon(Icons.AutoMirrored.Outlined.Label, contentDescription = null)
                         },
                         modifier = Modifier.clickable { currentRoute = SettingsRoute.Categories }
+                    )
+                    Spacer(Modifier.weight(1f))
+                    Text(
+                        text = "v${BuildConfig.VERSION_NAME}",
+                        style = MaterialTheme.typography.bodySmall,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.5f),
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .padding(vertical = 16.dp),
+                        textAlign = TextAlign.Center
                     )
                 }
             }
