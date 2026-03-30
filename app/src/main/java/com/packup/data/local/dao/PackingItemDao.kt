@@ -22,6 +22,9 @@ interface PackingItemDao {
     @Query("SELECT * FROM packing_items WHERE status = 'SNOOZED' ORDER BY memberId, sortOrder ASC")
     fun getSnoozedItems(): Flow<List<PackingItemEntity>>
 
+    @Query("SELECT * FROM packing_items WHERE status = 'SNOOZED' ORDER BY memberId, sortOrder ASC")
+    suspend fun getSnoozedItemsSync(): List<PackingItemEntity>
+
     @Query("SELECT * FROM packing_items WHERE id = :id")
     suspend fun getById(id: String): PackingItemEntity?
 

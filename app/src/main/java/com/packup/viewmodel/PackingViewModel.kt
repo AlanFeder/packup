@@ -1,5 +1,6 @@
 package com.packup.viewmodel
 
+import android.content.Context
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.packup.data.local.DevicePreferences
@@ -10,7 +11,10 @@ import com.packup.data.local.entity.MorningItemEntity
 import com.packup.data.local.entity.MorningItemStatus
 import com.packup.data.local.entity.PackingItemEntity
 import com.packup.data.repository.PackingRepository
+import com.packup.widget.MorningWidget
+import androidx.glance.appwidget.updateAll
 import dagger.hilt.android.lifecycle.HiltViewModel
+import dagger.hilt.android.qualifiers.ApplicationContext
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
@@ -38,6 +42,7 @@ data class MemberWithItems(
 class PackingViewModel @Inject constructor(
     private val repository: PackingRepository,
     private val devicePreferences: DevicePreferences,
+    @ApplicationContext private val appContext: Context,
 ) : ViewModel() {
 
     private val _activeMemberId = MutableStateFlow("mom")
@@ -106,6 +111,12 @@ class PackingViewModel @Inject constructor(
         snoozed.size + morning.size
     }.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), 0)
 
+    private fun refreshWidget() {
+        viewModelScope.launch {
+            MorningWidget().updateAll(appContext)
+        }
+    }
+
     // Seeding is handled by StartupViewModel before this screen is shown
 
     fun selectMember(id: String) {
@@ -119,15 +130,15 @@ class PackingViewModel @Inject constructor(
     }
 
     fun snoozeItem(itemId: String) {
-        viewModelScope.launch { repository.snoozeItem(itemId) }
+        viewModelScope.launch { repository.snoozeItem(itemId); refreshWidget() }
     }
 
     fun unsnoozeItem(itemId: String) {
-        viewModelScope.launch { repository.unsnoozeItem(itemId) }
+        viewModelScope.launch { repository.unsnoozeItem(itemId); refreshWidget() }
     }
 
     fun toggleSnoozedDone(item: PackingItemEntity) {
-        viewModelScope.launch { repository.toggleSnoozedDone(item.id, item.status) }
+        viewModelScope.launch { repository.toggleSnoozedDone(item.id, item.status); refreshWidget() }
     }
 
     fun addItem(name: String, category: String) {
@@ -153,19 +164,19 @@ class PackingViewModel @Inject constructor(
     // --- Morning item actions ---
 
     fun toggleMorningItemDone(item: MorningItemEntity) {
-        viewModelScope.launch { repository.toggleMorningItemDone(item.id, item.status) }
+        viewModelScope.launch { repository.toggleMorningItemDone(item.id, item.status); refreshWidget() }
     }
 
     fun addMorningItem(name: String) {
-        viewModelScope.launch { repository.addMorningItem(name) }
+        viewModelScope.launch { repository.addMorningItem(name); refreshWidget() }
     }
 
     fun editMorningItem(itemId: String, newName: String) {
-        viewModelScope.launch { repository.editMorningItem(itemId, newName) }
+        viewModelScope.launch { repository.editMorningItem(itemId, newName); refreshWidget() }
     }
 
     fun deleteMorningItem(itemId: String) {
-        viewModelScope.launch { repository.deleteMorningItem(itemId) }
+        viewModelScope.launch { repository.deleteMorningItem(itemId); refreshWidget() }
     }
 
     // --- Family member actions ---
@@ -218,6 +229,7 @@ class PackingViewModel @Inject constructor(
     fun resetAll() {
         viewModelScope.launch {
             repository.resetAll()
+            refreshWidget()
         }
     }
 }
