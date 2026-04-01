@@ -1,0 +1,15 @@
+---
+description: Bump app version on every code change in this Android project
+alwaysApply: true
+---
+
+# Version bump on changes
+
+Whenever you **edit project code, resources, or Gradle config** (anything that ships in the app), **in the same change** bump the Android version in `app/build.gradle.kts` under `defaultConfig`:
+
+1. **`versionCode`** — increment by **1** (integer, must always increase for Play Store).
+2. **`versionName`** — bump the **patch** segment (e.g. `1.1.5` → `1.1.6`). If the user explicitly asks for a minor/major release, adjust `versionName` accordingly instead.
+
+**Do not** bump version for edits that are **only** docs, comments in `.md` files, or Cursor-only config that does not affect the built APK—unless the user asks for a version bump anyway.
+
+If multiple files are changed in one task, **one** version bump for the whole task is enough.

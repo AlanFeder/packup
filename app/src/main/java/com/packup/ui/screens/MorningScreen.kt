@@ -79,16 +79,21 @@ fun MorningContent(
 
     val morningTodo = morningItems.filter { it.status == MorningItemStatus.TODO }
     val morningDone = morningItems.filter { it.status == MorningItemStatus.DONE }
-    val totalCount = snoozedItems.size + morningItems.size
     var showCelebration by remember { mutableStateOf(false) }
     var hadTodoItems by remember { mutableStateOf(morningTodo.isNotEmpty()) }
+    var hadSnoozed by remember { mutableStateOf(snoozedItems.isNotEmpty()) }
+    var unsnoozeCount by remember { mutableStateOf(0) }
 
-    LaunchedEffect(morningTodo.isEmpty(), morningDone.isNotEmpty()) {
-        if (morningTodo.isEmpty() && morningDone.isNotEmpty() && hadTodoItems) {
+    LaunchedEffect(morningTodo.isEmpty(), morningDone.isNotEmpty(), snoozedItems.isEmpty()) {
+        val allComplete = morningTodo.isEmpty() && snoozedItems.isEmpty()
+        val hadMorningCompletion = morningDone.isNotEmpty() && hadTodoItems
+        val hadSnoozedCompletion = hadSnoozed && snoozedItems.isEmpty()
+        if (allComplete && unsnoozeCount == 0 && (hadMorningCompletion || hadSnoozedCompletion)) {
             delay(400)
             showCelebration = true
         }
         hadTodoItems = morningTodo.isNotEmpty()
+        hadSnoozed = snoozedItems.isNotEmpty()
     }
 
     if (showCelebration) {
@@ -122,7 +127,10 @@ fun MorningContent(
                 member = member,
                 items = items,
                 onToggleDone = onToggleSnoozedDone,
-                onUnsnooze = onUnsnooze
+                onUnsnooze = { id ->
+                    unsnoozeCount++
+                    onUnsnooze(id)
+                }
             )
         }
 
@@ -315,15 +323,49 @@ private fun SnoozedMemberCard(
 
         HorizontalDivider(color = colorScheme.outlineVariant.copy(alpha = 0.4f))
 
+        var exitingItems by remember { mutableStateOf(setOf<String>()) }
+
         Column(modifier = Modifier.padding(horizontal = 4.dp, vertical = 4.dp)) {
             items.forEach { item ->
                 key(item.id) {
-                    PackingItemRow(
-                        item = item,
-                        onToggleDone = { onToggleDone(item) },
-                        onUnsnooze = { onUnsnooze(item.id) },
-                        showCategory = true
-                    )
+                    val isExiting = item.id in exitingItems
+                    val offsetX = remember { Animatable(0f) }
+                    val itemAlpha = remember { Animatable(1f) }
+                    val itemScale = remember { Animatable(1f) }
+
+                    AnimatedVisibility(
+                        visible = !isExiting || offsetX.isRunning || itemAlpha.value > 0f,
+                        exit = shrinkVertically(tween(250))
+                    ) {
+                        Box(
+                            modifier = Modifier
+                                .offset { IntOffset(offsetX.value.toInt(), 0) }
+                                .alpha(itemAlpha.value)
+                                .scale(itemScale.value)
+                        ) {
+                            PackingItemRow(
+                                item = item,
+                                onToggleDone = {
+                                    exitingItems = exitingItems + item.id
+                                },
+                                onUnsnooze = { onUnsnooze(item.id) },
+                                showCategory = true,
+                                isExiting = isExiting
+                            )
+                        }
+                    }
+
+                    if (isExiting) {
+                        LaunchedEffect(item.id) {
+                            delay(200)
+                            launch { offsetX.animateTo(400f, tween(350)) }
+                            launch { itemScale.animateTo(0.92f, tween(350)) }
+                            itemAlpha.animateTo(0f, tween(300))
+                            delay(50)
+                            onToggleDone(item)
+                            exitingItems = exitingItems - item.id
+                        }
+                    }
                 }
             }
         }
