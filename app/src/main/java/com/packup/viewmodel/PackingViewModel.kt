@@ -103,12 +103,12 @@ class PackingViewModel @Inject constructor(
             .launchIn(viewModelScope)
     }
 
-    // Total morning items count (snoozed packing items + dedicated morning items)
+    // Total morning items remaining (snoozed packing items + unchecked morning items)
     val totalMorningCount: StateFlow<Int> = combine(
         snoozedItems,
         morningItems
     ) { snoozed, morning ->
-        snoozed.size + morning.size
+        snoozed.size + morning.count { it.status == MorningItemStatus.TODO }
     }.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), 0)
 
     private fun refreshWidget() {
