@@ -4,7 +4,6 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.packup.data.auth.AuthManager
 import com.packup.data.local.DevicePreferences
-import com.packup.data.repository.PackingRepository
 import com.packup.data.sync.FirestoreSyncManager
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -25,7 +24,6 @@ class StartupViewModel @Inject constructor(
     private val authManager: AuthManager,
     private val devicePreferences: DevicePreferences,
     private val syncManager: FirestoreSyncManager,
-    private val repository: PackingRepository,
 ) : ViewModel() {
 
     private val _state = MutableStateFlow<AppStartupState>(AppStartupState.Loading)
@@ -45,7 +43,6 @@ class StartupViewModel @Inject constructor(
                     _state.value = AppStartupState.NeedsFamilySetup
                 } else {
                     syncManager.startListening(familyId)
-                    repository.seedIfEmpty()
                     _state.value = AppStartupState.Ready
                 }
             } catch (e: Exception) {

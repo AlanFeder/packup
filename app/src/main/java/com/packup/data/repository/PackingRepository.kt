@@ -1,6 +1,8 @@
 package com.packup.data.repository
 
+import androidx.room.withTransaction
 import com.packup.data.local.DevicePreferences
+import com.packup.data.local.PackUpDatabase
 import com.packup.data.local.dao.CategoryDao
 import com.packup.data.local.dao.FamilyMemberDao
 import com.packup.data.local.dao.MorningItemDao
@@ -21,6 +23,7 @@ import javax.inject.Singleton
 
 @Singleton
 class PackingRepository @Inject constructor(
+    private val db: PackUpDatabase,
     private val familyMemberDao: FamilyMemberDao,
     private val packingItemDao: PackingItemDao,
     private val morningItemDao: MorningItemDao,
@@ -193,18 +196,17 @@ class PackingRepository @Inject constructor(
         val now = System.currentTimeMillis()
         val urlOrPath = photoStorageManager.uploadMemberPhoto(id, photoUri)
         familyMemberDao.updatePhotoUri(id, urlOrPath, now, did)
-        // Only push to Firestore when we have a real URL; local paths are device-specific and would break other devices
         if (urlOrPath.startsWith("http")) {
             familyMemberDao.getById(id)?.let { syncManager.pushFamilyMemberAndAwait(it) }
         }
     }
 
     suspend fun deleteMember(id: String) {
-        val itemsToDelete = packingItemDao.getItemsByCategory("").let {
-            packingItemDao.getAllItemsSync().filter { item -> item.memberId == id }
+        val itemsToDelete = packingItemDao.getAllItemsSync().filter { it.memberId == id }
+        db.withTransaction {
+            familyMemberDao.delete(id)
+            packingItemDao.deleteByMember(id)
         }
-        familyMemberDao.delete(id)
-        packingItemDao.deleteByMember(id)
         syncManager.pushDelete("family_members", id)
         itemsToDelete.forEach { syncManager.pushDelete("packing_items", it.id) }
     }
@@ -230,9 +232,11 @@ class PackingRepository @Inject constructor(
     suspend fun renameCategory(oldName: String, newName: String) {
         val did = ensureDeviceId()
         val now = System.currentTimeMillis()
-        categoryDao.rename(oldName, newName, now, did)
-        packingItemDao.updateCategory(oldName, newName, now, did)
-        morningItemDao.updateCategory(oldName, newName, now, did)
+        db.withTransaction {
+            categoryDao.rename(oldName, newName, now, did)
+            packingItemDao.updateCategory(oldName, newName, now, did)
+            morningItemDao.updateCategory(oldName, newName, now, did)
+        }
 
         categoryDao.getByName(newName)?.let { syncManager.pushCategory(it) }
         packingItemDao.getItemsByCategory(newName).forEach { syncManager.pushPackingItem(it) }
@@ -243,9 +247,11 @@ class PackingRepository @Inject constructor(
         val did = ensureDeviceId()
         val now = System.currentTimeMillis()
         val catEntity = categoryDao.getByName(name)
-        categoryDao.delete(name)
-        packingItemDao.updateCategory(name, "General", now, did)
-        morningItemDao.updateCategory(name, "General", now, did)
+        db.withTransaction {
+            categoryDao.delete(name)
+            packingItemDao.updateCategory(name, "General", now, did)
+            morningItemDao.updateCategory(name, "General", now, did)
+        }
 
         if (catEntity != null) syncManager.pushDelete("categories", catEntity.id)
         packingItemDao.getItemsByCategory("General").forEach { syncManager.pushPackingItem(it) }
@@ -263,10 +269,12 @@ class PackingRepository @Inject constructor(
 
     suspend fun seedIfEmpty() {
         if (categoryDao.count() == 0) {
-            categoryDao.insertAll(SeedData.categories)
-            familyMemberDao.insertAll(SeedData.familyMembers)
-            packingItemDao.insertAll(SeedData.packingItems)
-            morningItemDao.insertAll(SeedData.morningItems)
+            db.withTransaction {
+                categoryDao.insertAll(SeedData.categories)
+                familyMemberDao.insertAll(SeedData.familyMembers)
+                packingItemDao.insertAll(SeedData.packingItems)
+                morningItemDao.insertAll(SeedData.morningItems)
+            }
         }
     }
 
@@ -283,8 +291,10 @@ class PackingRepository @Inject constructor(
     suspend fun resetAll() {
         val did = ensureDeviceId()
         val now = System.currentTimeMillis()
-        packingItemDao.resetAllStatuses(now, did)
-        morningItemDao.resetAllStatuses(now, did)
+        db.withTransaction {
+            packingItemDao.resetAllStatuses(now, did)
+            morningItemDao.resetAllStatuses(now, did)
+        }
         packingItemDao.getAllItemsSync().forEach { syncManager.pushPackingItem(it) }
         morningItemDao.getAllItemsSync().forEach { syncManager.pushMorningItem(it) }
     }
