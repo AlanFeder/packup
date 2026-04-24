@@ -30,7 +30,6 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.material3.VerticalDivider
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
@@ -61,22 +60,6 @@ fun MemberSelector(
     val done = members.filter { it.allDone }
 
     val listState = rememberLazyListState()
-
-    LaunchedEffect(activeMemberId, members) {
-        if (members.isEmpty()) return@LaunchedEffect
-        val index = when {
-            activeMemberId == "morning" -> active.size
-            else -> {
-                val activeIdx = active.indexOfFirst { it.member.id == activeMemberId }
-                if (activeIdx >= 0) activeIdx
-                else {
-                    val doneIdx = done.indexOfFirst { it.member.id == activeMemberId }
-                    if (doneIdx >= 0) active.size + 1 + doneIdx else 0
-                }
-            }
-        }
-        listState.animateScrollToItem(index)
-    }
 
     LazyRow(
         state = listState,
