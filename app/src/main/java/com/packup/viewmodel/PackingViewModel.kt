@@ -1,6 +1,5 @@
 package com.packup.viewmodel
 
-import android.content.Context
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.packup.data.local.DevicePreferences
@@ -11,10 +10,7 @@ import com.packup.data.local.entity.MorningItemEntity
 import com.packup.data.local.entity.MorningItemStatus
 import com.packup.data.local.entity.PackingItemEntity
 import com.packup.data.repository.PackingRepository
-import com.packup.widget.MorningWidget
-import androidx.glance.appwidget.updateAll
 import dagger.hilt.android.lifecycle.HiltViewModel
-import dagger.hilt.android.qualifiers.ApplicationContext
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
@@ -42,7 +38,6 @@ data class MemberWithItems(
 class PackingViewModel @Inject constructor(
     private val repository: PackingRepository,
     private val devicePreferences: DevicePreferences,
-    @ApplicationContext private val appContext: Context,
 ) : ViewModel() {
 
     private val _activeMemberId = MutableStateFlow("mom")
@@ -82,8 +77,6 @@ class PackingViewModel @Inject constructor(
     }.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), null)
 
     init {
-        // On load: select the first list in the carousel (first non-done member, or morning).
-        // So if someone completed their list and moved to the end, we don't open on them.
         var hasSetInitialSelection = false
         membersWithItems
             .onEach { members ->
@@ -103,21 +96,12 @@ class PackingViewModel @Inject constructor(
             .launchIn(viewModelScope)
     }
 
-    // Total morning items count (snoozed packing items + dedicated morning items)
     val totalMorningCount: StateFlow<Int> = combine(
         snoozedItems,
         morningItems
     ) { snoozed, morning ->
-        snoozed.size + morning.size
+        snoozed.size + morning.count { it.status == MorningItemStatus.TODO }
     }.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), 0)
-
-    private fun refreshWidget() {
-        viewModelScope.launch {
-            MorningWidget().updateAll(appContext)
-        }
-    }
-
-    // Seeding is handled by StartupViewModel before this screen is shown
 
     fun selectMember(id: String) {
         _activeMemberId.value = id
@@ -130,15 +114,15 @@ class PackingViewModel @Inject constructor(
     }
 
     fun snoozeItem(itemId: String) {
-        viewModelScope.launch { repository.snoozeItem(itemId); refreshWidget() }
+        viewModelScope.launch { repository.snoozeItem(itemId) }
     }
 
     fun unsnoozeItem(itemId: String) {
-        viewModelScope.launch { repository.unsnoozeItem(itemId); refreshWidget() }
+        viewModelScope.launch { repository.unsnoozeItem(itemId) }
     }
 
     fun toggleSnoozedDone(item: PackingItemEntity) {
-        viewModelScope.launch { repository.toggleSnoozedDone(item.id, item.status); refreshWidget() }
+        viewModelScope.launch { repository.toggleSnoozedDone(item.id, item.status) }
     }
 
     fun addItem(name: String, category: String) {
@@ -164,19 +148,19 @@ class PackingViewModel @Inject constructor(
     // --- Morning item actions ---
 
     fun toggleMorningItemDone(item: MorningItemEntity) {
-        viewModelScope.launch { repository.toggleMorningItemDone(item.id, item.status); refreshWidget() }
+        viewModelScope.launch { repository.toggleMorningItemDone(item.id, item.status) }
     }
 
     fun addMorningItem(name: String) {
-        viewModelScope.launch { repository.addMorningItem(name); refreshWidget() }
+        viewModelScope.launch { repository.addMorningItem(name) }
     }
 
     fun editMorningItem(itemId: String, newName: String) {
-        viewModelScope.launch { repository.editMorningItem(itemId, newName); refreshWidget() }
+        viewModelScope.launch { repository.editMorningItem(itemId, newName) }
     }
 
     fun deleteMorningItem(itemId: String) {
-        viewModelScope.launch { repository.deleteMorningItem(itemId); refreshWidget() }
+        viewModelScope.launch { repository.deleteMorningItem(itemId) }
     }
 
     // --- Family member actions ---
@@ -235,9 +219,6 @@ class PackingViewModel @Inject constructor(
     // --- Reset ---
 
     fun resetAll() {
-        viewModelScope.launch {
-            repository.resetAll()
-            refreshWidget()
-        }
+        viewModelScope.launch { repository.resetAll() }
     }
 }

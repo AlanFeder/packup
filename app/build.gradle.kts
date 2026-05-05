@@ -15,8 +15,8 @@ android {
         applicationId = "com.packup"
         minSdk = 26
         targetSdk = 35
-        versionCode = 9
-        versionName = "1.1.5"
+        versionCode = 13
+        versionName = "1.1.9"
     }
 
     buildTypes {
@@ -76,9 +76,6 @@ dependencies {
     implementation(libs.firebase.storage)
 
     implementation(libs.datastore.preferences)
-
-    implementation(libs.glance.appwidget)
-    implementation(libs.glance.material3)
 
     implementation(libs.coil.compose)
     implementation(libs.coil.network)

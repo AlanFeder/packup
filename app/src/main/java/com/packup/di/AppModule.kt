@@ -32,6 +32,7 @@ object AppModule {
     fun provideDatabase(@ApplicationContext context: Context): PackUpDatabase =
         Room.databaseBuilder(context, PackUpDatabase::class.java, "packup.db")
             .fallbackToDestructiveMigration()
+            .enableMultiInstanceInvalidation()
             .build()
 
     @Provides fun provideFamilyMemberDao(db: PackUpDatabase): FamilyMemberDao = db.familyMemberDao()

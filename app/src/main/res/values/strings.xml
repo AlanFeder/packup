@@ -1,6 +1,4 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
     <string name="app_name">Pack Pal</string>
-    <string name="widget_description">Morning checklist for departure day</string>
-    <string name="widget_loading">Loading…</string>
 </resources>
