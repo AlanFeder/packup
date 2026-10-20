@@ -13,3 +13,8 @@ local.properties
 /screenshot.png
 vercel_prototype/public/avatars/
 app/google-services.json
+
+# Generated prototype files
+vercel_prototype/node_modules/
+vercel_prototype/.next/
+vercel_prototype/next-env.d.ts

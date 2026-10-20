@@ -1,0 +1,23 @@
+name: Prototype dependency security
+on:
+  pull_request:
+  workflow_dispatch:
+  schedule:
+    - cron: '43 10 * * 1'
+permissions:
+  contents: read
+jobs:
+  prototype:
+    runs-on: ubuntu-24.04
+    defaults:
+      run:
+        working-directory: vercel_prototype
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
+      - uses: actions/setup-node@249970729cb0ef3589644e2896645e5dc5ba9c38
+        with:
+          node-version: 24
+      - run: npm install --global pnpm@11.25.0
+      - run: pnpm install --frozen-lockfile
+      - run: pnpm build
+      - run: pnpm audit --audit-level=low
