@@ -18,3 +18,5 @@ app/google-services.json
 vercel_prototype/node_modules/
 vercel_prototype/.next/
 vercel_prototype/next-env.d.ts
+
+.kotlin/

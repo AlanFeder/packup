@@ -45,6 +45,12 @@ android {
 }
 
 dependencies {
+    constraints {
+        implementation("com.google.protobuf:protobuf-javalite:3.25.9") {
+            because("CVE-2024-7254: prevent unbounded recursion when parsing malicious protobuf messages")
+        }
+    }
+
     implementation(libs.androidx.core.ktx)
     implementation(libs.androidx.lifecycle.runtime.ktx)
     implementation(libs.androidx.lifecycle.viewmodel.compose)

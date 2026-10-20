@@ -1,4 +1,4 @@
-name: Prototype dependency security
+name: Web and Android dependency security
 on:
   pull_request:
   workflow_dispatch:
@@ -21,3 +21,19 @@ jobs:
       - run: pnpm install --frozen-lockfile
       - run: pnpm build
       - run: pnpm audit --audit-level=low
+  android-runtime:
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
+      - uses: actions/setup-java@b6effb05e454b25005698d916606bdc6ffcbf961 # v5
+        with:
+          distribution: temurin
+          java-version: 17
+      - name: Resolve the actual Android runtime
+        run: ./gradlew --init-script tools/export-security-runtime.gradle -Daudit.output="$RUNNER_TEMP/android-runtime.cdx.json" exportSecurityRuntime
+      - name: Audit resolved Maven components
+        run: |
+          curl -fL https://github.com/google/osv-scanner/releases/download/v2.7.0/osv-scanner_linux_amd64 -o "$RUNNER_TEMP/osv-scanner"
+          printf '%s  %s\n' '160c6253e2922e9e0a6a9771c5c4c40a4b3c6090b34a3cdd5e80c96cc2e4218b' "$RUNNER_TEMP/osv-scanner" | sha256sum --check
+          chmod +x "$RUNNER_TEMP/osv-scanner"
+          "$RUNNER_TEMP/osv-scanner" scan source -L "$RUNNER_TEMP/android-runtime.cdx.json"
