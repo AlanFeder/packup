@@ -46,6 +46,9 @@ android {
 
 dependencies {
     constraints {
+        implementation("com.google.guava:guava:33.7.2-android") {
+            because("Use the patched Android runtime for GHSA-xxph-c9ww-hj94")
+        }
         implementation("com.google.protobuf:protobuf-javalite:3.25.9") {
             because("CVE-2024-7254: prevent unbounded recursion when parsing malicious protobuf messages")
         }
